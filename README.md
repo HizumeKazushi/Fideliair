@@ -1,52 +1,52 @@
 # Fideliair
 
-Fideliair is a modern, lightweight music player for macOS, designed with a focus on aesthetics and essential features. It offers a seamless experience with your local music library.
+Fideliair は、美しさと基本的な機能に焦点を当てた、macOS 向けのモダンで軽量な音楽プレーヤーです。ローカルの音楽ライブラリをシームレスに楽しむことができます。
 
-## Features
+## 特徴
 
-- **Local Library Integration**: Automatically scans and loads tracks from your Music folder.
-- **Modern UI**: Clean, Apple Music-inspired interface with blurry album art backgrounds.
-- **Lyrics Support**: Synchronized lyrics display with smooth scrolling (Apple Music style).
-- **Queue Management**: "Up Next" queue visualization and management.
-- **Playlists**: Create and manage local playlists.
-- **Gapless Playback**: Seamless transition between tracks.
-- **Now Playing View**: Full-screen capable Now Playing overlay with toggleable lyrics/queue.
-- **Media Controls**: Supports standard macOS media keys (Play/Pause, Next, Previous).
+- **ローカルライブラリ統合**: Music フォルダからトラックを自動的にスキャンして読み込みます。
+- **モダンな UI**: アルバムアートのぼかし背景を取り入れた、Apple Music 風のクリーンなインターフェース。
+- **歌詞表示**: Apple Music スタイルのスムーズなスクロールに対応した同期歌詞表示。
+- **再生キュー管理**: 「次に再生（Up Next）」のキューを可視化・管理できます。
+- **プレイリスト**: ローカルプレイリストの作成と管理が可能。
+- **ギャップレス再生**: トラック間の途切れのないスムーズな再生。
+- **Now Playing ビュー**: 歌詞やキューの表示切り替えが可能な、フルスクリーン対応の再生画面オーバーレイ。
+- **メディアコントロール**: 標準の macOS メディアキー（再生/一時停止、次へ、前へ）に対応。
 
-## Requirements
+## 動作環境
 
-- macOS 14.0 or later
+- macOS 14.0 以降
 
-## Building from Source
+## ソースコードからのビルド
 
-Fideliair is built using Swift Package Manager.
+Fideliair は Swift Package Manager を使用して構築されています。
 
-1. Clone the repository.
-2. Navigate to the project directory.
-3. Build the project in release mode:
+1. リポジトリをクローンします。
+2. プロジェクトディレクトリに移動します。
+3. リリースモードでプロジェクトをビルドします:
 
 ```bash
 swift build -c release
 ```
 
-4. The compiled application will be located in `.build/arm64-apple-macosx/release/Fideliair`.
-   (You may need to move it to `Fideliair.app` structure manually or use the produced executable)
+4. コンパイルされたアプリケーションは `.build/arm64-apple-macosx/release/Fideliair` に生成されます。
+   （手動で `Fideliair.app` 構造に移動するか、生成された実行ファイルを使用してください）
 
-To run easily during development:
+開発中に簡単に実行するには:
 
 ```bash
 swift run
 ```
 
-## Structure
+## ディレクトリ構成
 
-- `Fideliair/`: Main source code directory.
-  - `App.swift`: Application entry point.
-  - `Views/`: SwiftUI views.
-  - `Managers/`: Logic managers (Audio, Library, Playlist, Lyrics).
-  - `Models/`: Data models.
-  - `Resources/`: Assets (Icons, etc).
+- `Fideliair/`: メインのソースコードディレクトリ。
+  - `App.swift`: アプリケーションのエントリーポイント。
+  - `Views/`: SwiftUI ビュー。
+  - `Managers/`: ロジックマネージャー（オーディオ、ライブラリ、プレイリスト、歌詞）。
+  - `Models/`: データモデル。
+  - `Resources/`: アセット（アイコンなど）。
 
-## License
+## ライセンス
 
-This project is for educational and personal use.
+このプロジェクトは教育および個人使用を目的としています。
