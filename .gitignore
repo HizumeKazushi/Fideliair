@@ -1,0 +1,9 @@
+.DS_Store
+/.build
+/Packages
+/*.xcodeproj
+/*.xcworkspace
+/DerivedData
+.swiftpm
+/Fideliair.app
+Fideliair.app.dSYM
