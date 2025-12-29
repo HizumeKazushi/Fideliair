@@ -178,6 +178,9 @@ class LibraryManager: ObservableObject {
         var bpm: Int?
         var comment: String?
         var encoder: String?
+        var sampleRate: Int?
+        var channels: Int?
+        // var bitrate: Int? // Not used yet, model property exists but local var wasn't defined
         
         // Try modern async API first
         do {
@@ -188,6 +191,31 @@ class LibraryManager: ObservableObject {
             
             let (durationValue, commonMetadata, formatMetadata) = try await (durationTask, metadataTask, formatMetadataTask)
             duration = CMTimeGetSeconds(durationValue)
+            
+            // Extract audio format details
+            if let audioTrack = try? await asset.loadTracks(withMediaType: .audio).first {
+                // Get format descriptions
+                 let formatDescriptions = try? await audioTrack.load(.formatDescriptions)
+                 if let desc = formatDescriptions?.first {
+                     // Get AudioStreamBasicDescription from the format description
+                     if let asbdPointer = CMAudioFormatDescriptionGetStreamBasicDescription(desc) {
+                         let asbd = asbdPointer.pointee
+                         sampleRate = Int(asbd.mSampleRate)
+                         channels = Int(asbd.mChannelsPerFrame)
+                         
+                         // Determine format
+                         let formatID = asbd.mFormatID
+                         switch formatID {
+                         case kAudioFormatLinearPCM: encoder = "PCM"
+                         case kAudioFormatMPEG4AAC: encoder = "AAC"
+                         case kAudioFormatMPEGLayer3: encoder = "MP3"
+                         case kAudioFormatAppleLossless: encoder = "ALAC"
+                         case kAudioFormatFLAC: encoder = "FLAC"
+                         default: encoder = "Unknown"
+                         }
+                     }
+                 }
+            }
             
             // Process common metadata
             for item in commonMetadata {
@@ -326,8 +354,8 @@ class LibraryManager: ObservableObject {
             
         } catch {
             // Fallback: try synchronous metadata extraction
-            duration = extractDurationSync(from: url) ?? 0
-            let fallbackMeta = extractMetadataSync(from: url)
+            duration = Self.extractDurationSync(from: url) ?? 0
+            let fallbackMeta = Self.extractMetadataSync(from: url)
             if let meta = fallbackMeta {
                 if !meta.title.isEmpty { title = meta.title }
                 if !meta.artist.isEmpty { artist = meta.artist }
@@ -338,7 +366,7 @@ class LibraryManager: ObservableObject {
         
         // Parse title from filename if still default
         if title == url.deletingPathExtension().lastPathComponent {
-            let parsed = parseFilename(url.deletingPathExtension().lastPathComponent)
+            let parsed = Self.parseFilename(url.deletingPathExtension().lastPathComponent)
             if let parsedTitle = parsed.title { title = parsedTitle }
             if let parsedArtist = parsed.artist, artist == "Unknown Artist" { artist = parsedArtist }
         }
@@ -360,18 +388,22 @@ class LibraryManager: ObservableObject {
             copyright: copyright,
             bpm: bpm,
             comment: comment,
+            lyrics: nil, // Add missing default
+            bitrate: nil, // Add missing default
+            sampleRate: sampleRate,
+            channels: channels,
             encoder: encoder
         )
     }
     
     // MARK: - Sync Fallback Methods
-    nonisolated private func extractDurationSync(from url: URL) -> TimeInterval? {
+    nonisolated static func extractDurationSync(from url: URL) -> TimeInterval? {
         let asset = AVURLAsset(url: url)
         let duration = CMTimeGetSeconds(asset.duration)
         return duration.isNaN ? nil : duration
     }
     
-    nonisolated private func extractMetadataSync(from url: URL) -> (title: String, artist: String, album: String, artwork: NSImage?)? {
+    nonisolated static func extractMetadataSync(from url: URL) -> (title: String, artist: String, album: String, artwork: NSImage?)? {
         let asset = AVURLAsset(url: url)
         var title = ""
         var artist = ""
@@ -401,7 +433,7 @@ class LibraryManager: ObservableObject {
     }
     
     // MARK: - Filename Parsing
-    nonisolated private func parseFilename(_ filename: String) -> (title: String?, artist: String?) {
+    nonisolated static func parseFilename(_ filename: String) -> (title: String?, artist: String?) {
         var name = filename
         
         // Remove track number prefix (01, 01., 01 -, etc.)

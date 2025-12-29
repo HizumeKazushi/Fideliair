@@ -28,7 +28,7 @@ struct NowPlayingBar: View {
                         .frame(width: 56, height: 56)
                         .overlay(
                             Image(systemName: "music.note")
-                                .font(.title2)
+                                .font(.zen(.title2))
                                 .foregroundStyle(.secondary)
                         )
                 }
@@ -41,11 +41,11 @@ struct NowPlayingBar: View {
             // Track info
             VStack(alignment: .leading, spacing: 2) {
                 Text(audioPlayer.currentTrack?.title ?? "Not Playing")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.zen(size: 14, weight: .semibold))
                     .lineLimit(1)
                 
                 Text(audioPlayer.currentTrack?.artist ?? "—")
-                    .font(.system(size: 12))
+                    .font(.zen(size: 12))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
@@ -57,19 +57,19 @@ struct NowPlayingBar: View {
             HStack(spacing: 24) {
                 Button(action: { audioPlayer.previousTrack() }) {
                     Image(systemName: "backward.fill")
-                        .font(.system(size: 18))
+                        .font(.zen(size: 18))
                 }
                 .buttonStyle(PlayerButtonStyle())
                 
                 Button(action: { audioPlayer.togglePlayPause() }) {
                     Image(systemName: audioPlayer.isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                        .font(.system(size: 40))
+                        .font(.zen(size: 40))
                 }
                 .buttonStyle(PlayerButtonStyle(isMain: true))
                 
                 Button(action: { audioPlayer.nextTrack() }) {
                     Image(systemName: "forward.fill")
-                        .font(.system(size: 18))
+                        .font(.zen(size: 18))
                 }
                 .buttonStyle(PlayerButtonStyle())
             }
@@ -122,13 +122,13 @@ struct NowPlayingBar: View {
                 // Time labels
                 HStack {
                     Text(audioPlayer.formattedTime(audioPlayer.currentTime))
-                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .font(.zen(size: 10).weight(.medium).monospaced())
                         .foregroundStyle(.secondary)
                     
                     Spacer()
                     
                     Text(audioPlayer.formattedTime(audioPlayer.duration))
-                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .font(.zen(size: 10).weight(.medium).monospaced())
                         .foregroundStyle(.secondary)
                 }
             }
@@ -139,7 +139,7 @@ struct NowPlayingBar: View {
             // Volume slider
             HStack(spacing: 8) {
                 Image(systemName: audioPlayer.volume == 0 ? "speaker.slash.fill" : "speaker.wave.2.fill")
-                    .font(.system(size: 12))
+                    .font(.zen(size: 12))
                     .foregroundStyle(.secondary)
                 
                 Slider(value: Binding(
@@ -150,30 +150,8 @@ struct NowPlayingBar: View {
                 .tint(.white.opacity(0.8))
             }
             
-            // Action buttons
-            HStack(spacing: 16) {
-                Button(action: {
-                    if var track = audioPlayer.currentTrack {
-                        track.isFavorite.toggle()
-                    }
-                }) {
-                    Image(systemName: audioPlayer.currentTrack?.isFavorite == true ? "heart.fill" : "heart")
-                        .font(.system(size: 16))
-                        .foregroundStyle(audioPlayer.currentTrack?.isFavorite == true ? .pink : .secondary)
-                }
-                .buttonStyle(.plain)
-                
-                Button(action: {
-                    withAnimation(.spring(duration: 0.4)) {
-                        showingLyrics.toggle()
-                    }
-                }) {
-                    Image(systemName: "quote.bubble")
-                        .font(.system(size: 16))
-                        .foregroundStyle(showingLyrics ? .blue : .secondary)
-                }
-                .buttonStyle(.plain)
-            }
+            // Action buttons removed as per user request
+            // (Lyrics and Like buttons were here)
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 12)

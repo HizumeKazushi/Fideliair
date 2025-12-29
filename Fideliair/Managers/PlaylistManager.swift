@@ -107,6 +107,35 @@ class PlaylistManager: ObservableObject {
         playlists[index].modifiedDate = Date()
         savePlaylists()
     }
+    func setCustomArtwork(_ image: NSImage, for playlist: Playlist) {
+        guard let index = playlists.firstIndex(where: { $0.id == playlist.id }) else { return }
+        
+        // Save image to disk
+        if let data = image.tiffRepresentation,
+           let bitmap = NSBitmapImageRep(data: data),
+           let jpgData = bitmap.representation(using: .jpeg, properties: [:]) {
+            
+            let filename = "\(playlist.id.uuidString).jpg"
+            
+            // Use Application Support directory
+            let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+            let appDir = appSupport.appendingPathComponent("Fideliair/Covers", isDirectory: true)
+            
+            do {
+                try FileManager.default.createDirectory(at: appDir, withIntermediateDirectories: true)
+                let fileURL = appDir.appendingPathComponent(filename)
+                try jpgData.write(to: fileURL)
+                
+                // Update model
+                playlists[index].customArtworkPath = fileURL.path
+                playlists[index].modifiedDate = Date()
+                savePlaylists()
+                
+            } catch {
+                print("Failed to save cover image: \(error)")
+            }
+        }
+    }
 }
 
 // MARK: - Stored Models (Codable)
@@ -118,6 +147,7 @@ private struct StoredPlaylist: Codable {
     var trackPaths: [String] // Store file paths instead of full Track objects
     var createdDate: Date
     var modifiedDate: Date
+    var customArtworkPath: String?
     
     init(from playlist: Playlist) {
         self.id = playlist.id
@@ -125,12 +155,14 @@ private struct StoredPlaylist: Codable {
         self.trackPaths = playlist.tracks.compactMap { $0.fileURL?.path }
         self.createdDate = playlist.createdDate
         self.modifiedDate = playlist.modifiedDate
+        self.customArtworkPath = playlist.customArtworkPath
     }
     
     func toPlaylist() -> Playlist {
         var playlist = Playlist(id: id, name: name)
         playlist.createdDate = createdDate
         playlist.modifiedDate = modifiedDate
+        playlist.customArtworkPath = customArtworkPath
         
         // Tracks will be populated when LibraryManager scans
         // For now, store paths as placeholder tracks

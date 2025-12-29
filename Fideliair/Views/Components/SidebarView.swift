@@ -4,13 +4,14 @@ import SwiftUI
 struct SidebarView: View {
     @Binding var selectedItem: SidebarItem
     @EnvironmentObject var libraryManager: LibraryManager
+    @ObservedObject var languageManager = LanguageManager.shared // Observe language
     @State private var showingFolderPicker = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // App title
             Text("Fideliair")
-                .font(.system(size: 24, weight: .bold, design: .rounded))
+                .font(.zen(size: 24, weight: .bold))
                 .foregroundStyle(.primary)
                 .padding(.horizontal, 20)
                 .padding(.top, 60)
@@ -39,8 +40,8 @@ struct SidebarView: View {
             // Library folders section
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text("Folders")
-                        .font(.caption)
+                    Text("Folders".localized)
+                        .font(.zen(.caption))
                         .foregroundStyle(.secondary)
                     
                     Spacer()
@@ -52,7 +53,7 @@ struct SidebarView: View {
                         }
                     }) {
                         Image(systemName: "arrow.clockwise")
-                            .font(.caption)
+                            .font(.zen(.caption))
                             .foregroundStyle(.secondary)
                     }
                     .buttonStyle(.plain)
@@ -61,7 +62,7 @@ struct SidebarView: View {
                     // Add folder button
                     Button(action: { showingFolderPicker = true }) {
                         Image(systemName: "plus")
-                            .font(.caption)
+                            .font(.zen(.caption))
                             .foregroundStyle(.secondary)
                     }
                     .buttonStyle(.plain)
@@ -91,8 +92,8 @@ struct SidebarView: View {
                 HStack(spacing: 8) {
                     ProgressView()
                         .scaleEffect(0.7)
-                    Text("Scanning...")
-                        .font(.caption)
+                    Text("Scanning...".localized)
+                        .font(.zen(.caption))
                         .foregroundStyle(.secondary)
                 }
                 .padding(.horizontal, 20)
@@ -124,12 +125,12 @@ struct SidebarItemView: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: item.icon)
-                .font(.system(size: 16, weight: .medium))
+                .font(.zen(size: 16, weight: .medium))
                 .foregroundStyle(isSelected ? .white : .primary)
                 .frame(width: 24)
             
-            Text(item.rawValue)
-                .font(.system(size: 14, weight: isSelected ? .semibold : .regular))
+            Text(item.rawValue.localized) // Localized
+                .font(.zen(size: 14, weight: isSelected ? .semibold : .regular))
                 .foregroundStyle(isSelected ? .white : .primary)
             
             Spacer()
@@ -166,11 +167,11 @@ struct FolderRowView: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "folder.fill")
-                .font(.caption)
+                .font(.zen(.caption))
                 .foregroundStyle(.secondary)
             
             Text(path.lastPathComponent)
-                .font(.caption)
+                .font(.zen(.caption))
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
             
@@ -181,7 +182,7 @@ struct FolderRowView: View {
                 HStack(spacing: 6) {
                     Button(action: { onReload?() }) {
                         Image(systemName: "arrow.clockwise")
-                            .font(.caption2)
+                            .font(.zen(.caption2))
                             .foregroundStyle(.secondary)
                     }
                     .buttonStyle(.plain)
@@ -189,7 +190,7 @@ struct FolderRowView: View {
                     
                     Button(action: onRemove) {
                         Image(systemName: "xmark.circle.fill")
-                            .font(.caption)
+                            .font(.zen(.caption))
                             .foregroundStyle(.secondary)
                     }
                     .buttonStyle(.plain)
@@ -208,13 +209,13 @@ struct FolderRowView: View {
         }
         .contextMenu {
             Button(action: { onReload?() }) {
-                Label("Reload Folder", systemImage: "arrow.clockwise")
+                Label("Reload Folder".localized, systemImage: "arrow.clockwise")
             }
             
             Divider()
             
             Button(role: .destructive, action: onRemove) {
-                Label("Remove Folder", systemImage: "trash")
+                Label("Remove Folder".localized, systemImage: "trash")
             }
         }
     }

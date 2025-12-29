@@ -35,6 +35,7 @@ class AudioPlayerManager: ObservableObject {
     @Published var currentIndex: Int = 0
     @Published var isShuffled = false
     @Published var repeatMode: RepeatMode = .off
+    @Published var isPlayingExternal = false
     
     // Original queue (before shuffle)
     private var originalQueue: [Track] = []
@@ -357,11 +358,29 @@ class AudioPlayerManager: ObservableObject {
     }
     
     func playQueue(_ tracks: [Track], startingAt index: Int = 0) {
+        // Reset shuffle state when playing normal queue
+        isShuffled = false
+        originalQueue = []
+        
         queue = tracks
         currentIndex = index
         if !tracks.isEmpty {
             play(track: tracks[index])
         }
+    }
+    
+    func shufflePlayQueue(_ tracks: [Track]) {
+        guard !tracks.isEmpty else { return }
+        
+        isShuffled = true
+        originalQueue = tracks
+        
+        var shuffledTracks = tracks
+        shuffledTracks.shuffle()
+        
+        queue = shuffledTracks
+        currentIndex = 0
+        play(track: shuffledTracks[0])
     }
     
     // MARK: - Time Observer
@@ -380,6 +399,45 @@ class AudioPlayerManager: ObservableObject {
         if let observer = timeObserver {
             player?.removeTimeObserver(observer)
             timeObserver = nil
+        }
+    }
+    
+    // MARK: - External Playback (YouTube)
+    func updateExternalPlayback(title: String, artist: String, artworkURL: URL?, isPlaying: Bool) {
+        // Pause local player if external starts playing
+        if isPlaying && self.isPlaying {
+            player?.pause()
+            self.isPlaying = false
+        }
+        
+        self.isPlayingExternal = true
+        self.isPlaying = isPlaying
+        
+        // Update current track info
+        if currentTrack?.title != title || currentTrack?.artist != artist {
+            Task {
+                var artwork: NSImage?
+                if let url = artworkURL, let data = try? Data(contentsOf: url) {
+                    artwork = NSImage(data: data)
+                }
+                
+                let track = Track(
+                    id: UUID(),
+                    title: title,
+                    artist: artist,
+                    album: "YouTube Music",
+                    duration: 0,
+                    fileURL: nil,
+                    artwork: artwork,
+                    isCached: false
+                )
+                
+                self.currentTrack = track
+                self.updateNowPlayingInfo()
+            }
+        } else if self.isPlaying != isPlaying {
+            // Just update play state
+             self.updateNowPlayingInfo()
         }
     }
     
