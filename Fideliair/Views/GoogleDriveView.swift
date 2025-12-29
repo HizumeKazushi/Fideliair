@@ -1,74 +1,66 @@
 import SwiftUI
 
 /// Google Drive view (placeholder for Phase 3)
+/// Google Drive view with local mount integration
 struct GoogleDriveView: View {
-    @State private var isAuthenticated = false
-    @State private var isAuthenticating = false
+    @StateObject private var manager = GoogleDriveManager()
+    @EnvironmentObject var audioPlayer: AudioPlayerManager
+    @State private var showingFolderPicker = false
     
     var body: some View {
         VStack(spacing: 0) {
             // Header
             HStack {
                 Text("Google Drive")
-                    .font(.title.bold())
+                    .font(.zen(.title).bold())
                 
                 Spacer()
                 
-                if isAuthenticated {
-                    Button(action: { /* Refresh */ }) {
-                        Image(systemName: "arrow.clockwise")
+                if manager.isConnected {
+                    Button(action: { manager.disconnect() }) {
+                        Text("Disconnect".localized)
+                            .font(.zen(.caption))
+                            .foregroundStyle(.red)
                     }
                     .buttonStyle(.plain)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.red.opacity(0.1))
+                    .clipShape(Capsule())
                 }
             }
             .padding()
             .background(GlassBackground(opacity: 0.3))
             
-            Spacer()
-            
-            if isAuthenticated {
-                // Connected state (placeholder)
-                VStack(spacing: 16) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 48))
-                        .foregroundStyle(.green)
-                    
-                    Text("Connected to Google Drive")
-                        .font(.title2)
-                    
-                    Text("Cloud music will appear here")
-                        .foregroundStyle(.secondary)
-                }
+            // Content
+            if let rootURL = manager.driveRootURL, manager.isConnected {
+                CloudBrowserView(rootURL: rootURL)
+                    .environmentObject(manager)
             } else {
-                // Not connected state
+                // Connect state
                 VStack(spacing: 24) {
-                    Image(systemName: "cloud")
+                    Image(systemName: "externaldrive.fill.badge.icloud")
                         .font(.system(size: 64))
                         .foregroundStyle(.secondary)
                     
-                    Text("Connect to Google Drive")
-                        .font(.title2)
-                    
-                    Text("Stream your music from the cloud")
-                        .foregroundStyle(.secondary)
+                    VStack(spacing: 8) {
+                        Text("Connect Google Drive".localized)
+                            .font(.zen(.title2).bold())
+                        
+                        Text("Select your Google Drive folder location\nto stream your music directly.".localized)
+                            .font(.zen(.body))
+                            .multilineTextAlignment(.center)
+                            .foregroundStyle(.secondary)
+                    }
                     
                     Button(action: {
-                        isAuthenticating = true
-                        // TODO: Implement Google OAuth
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                            isAuthenticating = false
-                            // isAuthenticated = true // Enable after OAuth implementation
-                        }
+                        showingFolderPicker = true
                     }) {
                         HStack {
-                            if isAuthenticating {
-                                ProgressView()
-                                    .scaleEffect(0.8)
-                                    .padding(.trailing, 4)
-                            }
-                            Image(systemName: "link")
-                            Text("Connect Account")
+                            Image(systemName: "folder.badge.plus")
+                            Text("Select Drive Folder".localized)
                         }
+                        .font(.zen(.headline))
                         .padding(.horizontal, 24)
                         .padding(.vertical, 12)
                         .background(
@@ -82,11 +74,23 @@ struct GoogleDriveView: View {
                         .foregroundStyle(.white)
                     }
                     .buttonStyle(.plain)
-                    .disabled(isAuthenticating)
+                    
+                    Text("Typically located at /Users/Shared/Google Drive\nor within /Volumes/".localized)
+                        .font(.zen(.caption))
+                        .foregroundStyle(.secondary.opacity(0.7))
+                        .padding(.top, 10)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            
-            Spacer()
+        }
+        .fileImporter(
+            isPresented: $showingFolderPicker,
+            allowedContentTypes: [.folder],
+            allowsMultipleSelection: false
+        ) { result in
+            if case .success(let urls) = result, let url = urls.first {
+                manager.connect(to: url)
+            }
         }
     }
 }

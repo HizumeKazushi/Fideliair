@@ -20,7 +20,7 @@ struct LyricsOverlay: View {
                     Spacer()
                     Button(action: { isShowing = false }) {
                         Image(systemName: "xmark.circle.fill")
-                            .font(.title)
+                            .font(.zen(.title))
                             .foregroundStyle(.white.opacity(0.7))
                     }
                     .buttonStyle(.plain)
@@ -45,11 +45,11 @@ struct LyricsOverlay: View {
                 } else {
                     VStack(spacing: 16) {
                         Image(systemName: "quote.bubble")
-                            .font(.system(size: 48))
+                            .font(.zen(size: 48))
                             .foregroundStyle(.white.opacity(0.5))
                         
                         Text("No lyrics available")
-                            .font(.title2)
+                            .font(.zen(.title2))
                             .foregroundStyle(.white.opacity(0.7))
                     }
                 }
@@ -68,10 +68,10 @@ struct LyricsOverlay: View {
                     
                     VStack(alignment: .leading) {
                         Text(audioPlayer.currentTrack?.title ?? "Unknown")
-                            .font(.headline)
+                            .font(.zen(.headline))
                             .foregroundStyle(.white)
                         Text(audioPlayer.currentTrack?.artist ?? "Unknown")
-                            .font(.subheadline)
+                            .font(.zen(.subheadline))
                             .foregroundStyle(.white.opacity(0.7))
                     }
                     
@@ -150,17 +150,24 @@ struct OverlayLyricLineView: View {
     let isPast: Bool
     
     var body: some View {
-        Text(line.text)
-            .font(.system(size: isCurrent ? 32 : 24, weight: isCurrent ? .bold : .medium))
-            .foregroundStyle(
-                isCurrent
-                    ? .white
-                    : (isPast ? .white.opacity(0.3) : .white.opacity(0.5))
-            )
-            .blur(radius: isCurrent ? 0 : (isPast ? 1 : 0.5))
-            .scaleEffect(isCurrent ? 1.0 : 0.9)
-            .animation(.spring(duration: 0.3), value: isCurrent)
-            .multilineTextAlignment(.center)
+        Group {
+            if line.isInstrumental {
+                Image(systemName: "music.note")
+                    .font(.zen(size: isCurrent ? 32 : 24))
+            } else {
+                Text(line.text)
+                    .font(.zen(size: isCurrent ? 32 : 24, weight: isCurrent ? .bold : .medium))
+            }
+        }
+        .foregroundStyle(
+            isCurrent
+                ? .white
+                : (isPast ? .white.opacity(0.3) : .white.opacity(0.5))
+        )
+        .blur(radius: isCurrent ? 0 : (isPast ? 1 : 0.5))
+        .scaleEffect(isCurrent ? 1.0 : 0.9)
+        .animation(.spring(duration: 0.3), value: isCurrent)
+        .multilineTextAlignment(.center)
     }
 }
 

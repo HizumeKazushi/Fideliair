@@ -42,7 +42,7 @@ struct TrackEditSheet: View {
                 Spacer()
                 
                 Text("Edit Track Info")
-                    .font(.headline)
+                    .font(.zen(.headline))
                 
                 Spacer()
                 
@@ -74,7 +74,7 @@ struct TrackEditSheet: View {
                                         .frame(width: 80, height: 80)
                                         .overlay(
                                             Image(systemName: "music.note")
-                                                .font(.title2)
+                                                .font(.zen(.title2))
                                                 .foregroundColor(.secondary)
                                         )
                                 }
@@ -85,7 +85,7 @@ struct TrackEditSheet: View {
                                         HStack {
                                             Spacer()
                                             Image(systemName: "checkmark.circle.fill")
-                                                .font(.caption)
+                                                .font(.zen(.caption))
                                                 .foregroundColor(.green)
                                                 .background(Circle().fill(.white).padding(-2))
                                         }
@@ -98,7 +98,7 @@ struct TrackEditSheet: View {
                             
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(track.fileURL?.lastPathComponent ?? "Unknown")
-                                    .font(.caption.monospaced())
+                                    .font(.zen(.caption).monospaced())
                                     .lineLimit(2)
                                 
                                 Spacer()
@@ -122,7 +122,7 @@ struct TrackEditSheet: View {
                                             }
                                             Text("Search")
                                         }
-                                        .font(.caption)
+                                        .font(.zen(.caption))
                                     }
                                     .buttonStyle(.bordered)
                                     .disabled(searchService.isSearching)
@@ -160,7 +160,7 @@ struct TrackEditSheet: View {
                     VStack(alignment: .leading, spacing: 0) {
                         HStack {
                             Text("Search Results")
-                                .font(.headline)
+                                .font(.zen(.headline))
                             Spacer()
                             if searchService.isSearching {
                                 ProgressView()
@@ -284,7 +284,7 @@ struct SimpleMetadataField: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
-                .font(.caption)
+                .font(.zen(.caption))
                 .foregroundColor(.secondary)
             
             TextField(label, text: $text)
@@ -315,25 +315,25 @@ struct SearchResultButton: View {
                         .frame(width: 40, height: 40)
                         .overlay(
                             Image(systemName: "music.note")
-                                .font(.caption)
+                                .font(.zen(.caption))
                                 .foregroundColor(.secondary)
                         )
                 }
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(result.title)
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.zen(size: 12, weight: .medium))
                         .foregroundColor(.primary)
                         .lineLimit(1)
                     
                     Text(result.artist)
-                        .font(.caption2)
+                        .font(.zen(.caption2))
                         .foregroundColor(.secondary)
                         .lineLimit(1)
                     
                     if !result.album.isEmpty {
                         Text(result.album)
-                            .font(.caption2)
+                            .font(.zen(.caption2))
                             .foregroundColor(.secondary.opacity(0.7))
                             .lineLimit(1)
                     }
@@ -343,7 +343,7 @@ struct SearchResultButton: View {
                 
                 if result.artwork != nil {
                     Image(systemName: "photo.fill")
-                        .font(.caption2)
+                        .font(.zen(.caption2))
                         .foregroundColor(.green)
                 }
             }

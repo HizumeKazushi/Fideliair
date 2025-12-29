@@ -4,6 +4,7 @@ import AppKit
 // Notification for closing Now Playing view
 extension Notification.Name {
     static let closeNowPlaying = Notification.Name("closeNowPlaying")
+    static let showNowPlaying = Notification.Name("showNowPlaying")
 }
 
 /// Full-screen Now Playing overlay - Apple Music style
@@ -70,7 +71,7 @@ struct NowPlayingFullView: View {
                                             } 
                                         }) {
                                             Image(systemName: "quote.bubble.fill")
-                                                .font(.title2)
+                                                .font(.zen(.title2))
                                                 .foregroundColor(viewMode == .lyrics ? .white : .white.opacity(0.4))
                                                 .padding(10)
                                                 .background(viewMode == .lyrics ? Color.white.opacity(0.2) : Color.clear)
@@ -85,7 +86,7 @@ struct NowPlayingFullView: View {
                                             } 
                                         }) {
                                             Image(systemName: "list.bullet")
-                                                .font(.title2)
+                                                .font(.zen(.title2))
                                                 .foregroundColor(viewMode == .queue ? .white : .white.opacity(0.4))
                                                 .padding(10)
                                                 .background(viewMode == .queue ? Color.white.opacity(0.2) : Color.clear)
@@ -135,14 +136,36 @@ struct NowPlayingFullView: View {
                                 
                                 VStack(spacing: 8) {
                                     Text(audioPlayer.currentTrack?.title ?? "Unknown")
-                                        .font(.title.bold())
+                                        .font(.zen(.title).bold())
                                         .foregroundColor(.white)
                                         .lineLimit(2)
                                         .multilineTextAlignment(.center)
                                     
                                     Text(audioPlayer.currentTrack?.artist ?? "Unknown Artist")
-                                        .font(.title3)
+                                        .font(.zen(.title3))
                                         .foregroundColor(.white.opacity(0.7))
+                                    
+                                    // Audio Quality Badge (Centered)
+                                    if let track = audioPlayer.currentTrack, track.isLossless || track.isHiRes {
+                                        HStack(spacing: 8) {
+                                            // Main Badge
+                                            Text(track.qualityBadge)
+                                                .font(.zen(size: 12, weight: .bold))
+                                                .foregroundColor(.black)
+                                                .padding(.horizontal, 8)
+                                                .padding(.vertical, 4)
+                                                .background(Color.white.opacity(0.9))
+                                                .cornerRadius(5)
+                                            
+                                            // Tech Details
+                                            if !track.technicalDetails.isEmpty {
+                                                Text(track.technicalDetails)
+                                                    .font(.zen(size: 12, weight: .medium))
+                                                    .foregroundColor(.white.opacity(0.7))
+                                            }
+                                        }
+                                        .padding(.top, 6)
+                                    }
                                 }
                                 .frame(maxWidth: 400)
                                 
@@ -157,7 +180,7 @@ struct NowPlayingFullView: View {
                                         } 
                                     }) {
                                         Image(systemName: "quote.bubble.fill")
-                                            .font(.title2)
+                                            .font(.zen(.title2))
                                             .foregroundColor(viewMode == .lyrics ? .white : .white.opacity(0.4))
                                             .padding(10)
                                             .background(viewMode == .lyrics ? Color.white.opacity(0.2) : Color.clear)
@@ -172,7 +195,7 @@ struct NowPlayingFullView: View {
                                         } 
                                     }) {
                                         Image(systemName: "list.bullet")
-                                            .font(.title2)
+                                            .font(.zen(.title2))
                                             .foregroundColor(viewMode == .queue ? .white : .white.opacity(0.4))
                                             .padding(10)
                                             .background(viewMode == .queue ? Color.white.opacity(0.2) : Color.clear)
@@ -208,10 +231,10 @@ struct NowPlayingFullView: View {
                         .padding(.top, 10)
                     
                     Text("NOW PLAYING")
-                        .font(.caption2.bold())
+                        .font(.zen(.caption2).bold())
                         .foregroundColor(.white.opacity(0.5))
                     Text(audioPlayer.currentTrack?.album ?? "")
-                        .font(.caption)
+                        .font(.zen(.caption))
                         .foregroundColor(.white.opacity(0.7))
                         .lineLimit(1)
                 }
@@ -311,14 +334,14 @@ struct NowPlayingFullView: View {
                 // Shuffle button
                 Button(action: { audioPlayer.toggleShuffle() }) {
                     Image(systemName: "shuffle")
-                        .font(.title3)
+                        .font(.zen(.title3))
                         .foregroundColor(audioPlayer.isShuffled ? .blue : .white.opacity(0.7))
                 }
                 .buttonStyle(.plain)
                 
                 Button(action: { audioPlayer.previousTrack() }) {
                     Image(systemName: "backward.fill")
-                        .font(.title2)
+                        .font(.zen(.title2))
                         .foregroundColor(.white)
                 }
                 .buttonStyle(.plain)
@@ -384,6 +407,28 @@ struct NowPlayingFullView: View {
                 Text(audioPlayer.currentTrack?.artist ?? "Unknown Artist")
                     .font(.body)
                     .foregroundColor(.white.opacity(0.7))
+                
+                // Audio Quality Badge
+                if let track = audioPlayer.currentTrack, track.isLossless || track.isHiRes {
+                    HStack(spacing: 8) {
+                        // Main Badge
+                        Text(track.qualityBadge)
+                            .font(.zen(size: 12, weight: .bold))
+                            .foregroundColor(.black)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.white.opacity(0.9))
+                            .cornerRadius(5)
+                        
+                        // Tech Details
+                        if !track.technicalDetails.isEmpty {
+                            Text(track.technicalDetails)
+                                .font(.zen(size: 12, weight: .medium))
+                                .foregroundColor(.white.opacity(0.7))
+                        }
+                    }
+                    .padding(.top, 6)
+                }
             }
             .frame(maxWidth: maxArtSize)
         }
@@ -418,6 +463,7 @@ struct AppleMusicLyricsView: View {
                         ForEach(Array(lyrics.lines.enumerated()), id: \.element.id) { index, line in
                             LyricLineView(
                                 text: line.text,
+                                isInstrumental: line.isInstrumental,
                                 isActive: index == currentIndex,
                                 isPast: index < (currentIndex ?? 0)
                             )
@@ -478,22 +524,30 @@ struct AppleMusicLyricsView: View {
 /// Single lyric line view with Apple Music animation
 struct LyricLineView: View {
     let text: String
+    let isInstrumental: Bool
     let isActive: Bool
     let isPast: Bool
     
     var body: some View {
-        Text(text)
-            .font(.system(size: isActive ? 28 : 20, weight: isActive ? .bold : .medium))
-            .foregroundColor(.white)
-            .opacity(isActive ? 1.0 : (isPast ? 0.4 : 0.5))
-            .blur(radius: isActive ? 0 : 1.5)
-            .scaleEffect(isActive ? 1.0 : 0.92, anchor: .center)
-            .multilineTextAlignment(.center)
-            .lineSpacing(6)
-            .padding(.vertical, isActive ? 14 : 8)
-            .contentShape(Rectangle())
-            .animation(.spring(response: 0.3, dampingFraction: 0.8, blendDuration: 0), value: isActive)
-            .shadow(color: isActive ? .black.opacity(0.4) : .clear, radius: 6, x: 0, y: 3)
+        Group {
+            if isInstrumental {
+                Image(systemName: "music.note")
+                    .font(.zen(size: isActive ? 24 : 18))
+            } else {
+                Text(text)
+                    .font(.zen(size: isActive ? 28 : 20, weight: isActive ? .bold : .medium))
+            }
+        }
+        .foregroundColor(.white)
+        .opacity(isActive ? 1.0 : (isPast ? 0.4 : 0.5))
+        .blur(radius: isActive ? 0 : 1.5)
+        .scaleEffect(isActive ? 1.0 : 0.92, anchor: .center)
+        .multilineTextAlignment(.center)
+        .lineSpacing(6)
+        .padding(.vertical, isActive ? 14 : 8)
+        .contentShape(Rectangle())
+        .animation(.spring(response: 0.3, dampingFraction: 0.8, blendDuration: 0), value: isActive)
+        .shadow(color: isActive ? .black.opacity(0.4) : .clear, radius: 6, x: 0, y: 3)
     }
 }
 

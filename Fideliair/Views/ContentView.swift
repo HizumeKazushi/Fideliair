@@ -4,9 +4,15 @@ struct ContentView: View {
     @EnvironmentObject var audioPlayer: AudioPlayerManager
     @EnvironmentObject var libraryManager: LibraryManager
     @EnvironmentObject var playlistManager: PlaylistManager
+    @ObservedObject var settingsManager = SettingsManager.shared
     @State private var selectedSidebarItem: SidebarItem = .library
     @State private var showingLyrics = false
     @State private var showNowPlayingFull = false
+    
+    // Unique ID to force redraw when font settings change
+    var appViewID: String {
+        "\(settingsManager.selectedFontName)-\(settingsManager.fontSizeScale)-\(settingsManager.useSystemFont)"
+    }
     
     var body: some View {
         ZStack {
@@ -29,6 +35,11 @@ struct ContentView: View {
                         PlaylistsView()
                     case .googleDrive:
                         GoogleDriveView()
+                    case .youTubeMusic:
+                        YouTubeView()
+                            .padding(.bottom, 90) // Prevent overlap with Now Playing bar
+                    case .settings:
+                        SettingsView()
                     }
                     
                     Spacer()
@@ -66,6 +77,7 @@ struct ContentView: View {
                     .zIndex(100)
             }
         }
+        .id(appViewID) // Force redraw when font settings change
         .ignoresSafeArea()
         .onChange(of: audioPlayer.currentTrack?.id) { oldValue, newValue in
             // Auto-show Now Playing when a new track starts
@@ -75,6 +87,16 @@ struct ContentView: View {
                 }
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .showNowPlaying)) { _ in
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.85, blendDuration: 0)) {
+                showNowPlayingFull = true
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .closeNowPlaying)) { _ in
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.85, blendDuration: 0)) {
+                showNowPlayingFull = false
+            }
+        }
     }
 }
 
@@ -82,12 +104,16 @@ enum SidebarItem: String, CaseIterable {
     case library = "Library"
     case playlists = "Playlists"
     case googleDrive = "Google Drive"
+    case youTubeMusic = "YouTube Music"
+    case settings = "Settings"
     
     var icon: String {
         switch self {
         case .library: return "music.note.house"
         case .playlists: return "music.note.list"
         case .googleDrive: return "cloud"
+        case .youTubeMusic: return "play.rectangle.fill"
+        case .settings: return "gearshape"
         }
     }
 }

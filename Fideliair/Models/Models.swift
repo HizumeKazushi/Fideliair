@@ -40,6 +40,38 @@ struct Track: Identifiable, Hashable {
     static func == (lhs: Track, rhs: Track) -> Bool {
         lhs.id == rhs.id
     }
+    
+    // MARK: - Audio Quality Helpers
+    var isLossless: Bool {
+        guard let url = fileURL else { return false }
+        let ext = url.pathExtension.lowercased()
+        return ["flac", "alac", "wav", "aiff"].contains(ext)
+    }
+    
+    var isHiRes: Bool {
+        // Hi-Res is typically defined as > 48kHz or > 24-bit
+        guard let sampleRate = sampleRate else { return false }
+        return sampleRate > 48000 || (bitrate ?? 0) > 320000 // Fallback if bitDepth is missing
+    }
+    
+    var qualityBadge: String {
+        if isHiRes && isLossless { return "Hi-Res Lossless" }
+        if isLossless { return "Lossless" }
+        if isHiRes { return "Hi-Res" }
+        return "AAC" // Default fallback, should refine based on actual format
+    }
+    
+    var technicalDetails: String {
+        var parts: [String] = []
+        if let rate = sampleRate {
+            let khz = Double(rate) / 1000.0
+            parts.append(String(format: "%.1f kHz", khz))
+        }
+        // Bit depth is harder to get directly without extra metadata extraction, 
+        // using bitrate as proxy or placeholder until extraction is implemented.
+        // For now, if we have explicit bit depth (need to add to model), use it.
+        return parts.joined(separator: " / ")
+    }
 }
 
 // MARK: - Album Model
@@ -66,14 +98,20 @@ struct Artist: Identifiable, Hashable {
     let id: UUID
     var name: String
     var albums: [Album]
-    var artwork: NSImage?
     
+    // Computed properties
     var trackCount: Int {
-        albums.reduce(0) { $0 + $1.trackCount }
+        albums.reduce(0) { $0 + $1.tracks.count }
     }
     
     var albumCount: Int {
         albums.count
+    }
+    
+    // Helper to get representative artwork
+    var artwork: NSImage? {
+        // Try to find first album with artwork
+        albums.first(where: { $0.artwork != nil })?.artwork
     }
     
     func hash(into hasher: inout Hasher) {
@@ -92,7 +130,14 @@ struct Playlist: Identifiable, Hashable {
     var tracks: [Track]
     var createdDate: Date
     var modifiedDate: Date
-    var artwork: NSImage?
+    var customArtworkPath: String?
+    
+    var artwork: NSImage? {
+        if let path = customArtworkPath, let image = NSImage(contentsOfFile: path) {
+            return image
+        }
+        return tracks.first?.artwork
+    }
     
     var duration: TimeInterval {
         tracks.reduce(0) { $0 + $1.duration }
@@ -104,6 +149,7 @@ struct Playlist: Identifiable, Hashable {
         self.tracks = tracks
         self.createdDate = Date()
         self.modifiedDate = Date()
+        self.customArtworkPath = nil
     }
     
     func hash(into hasher: inout Hasher) {
@@ -120,11 +166,13 @@ struct LyricLine: Identifiable {
     let id: UUID
     var timestamp: TimeInterval
     var text: String
+    var isInstrumental: Bool
     
-    init(timestamp: TimeInterval, text: String) {
+    init(timestamp: TimeInterval, text: String, isInstrumental: Bool = false) {
         self.id = UUID()
         self.timestamp = timestamp
         self.text = text
+        self.isInstrumental = isInstrumental
     }
 }
 
@@ -162,7 +210,10 @@ struct Lyrics: Identifiable {
             let timestamp = minutes * 60 + seconds + (milliseconds * Double(msMultiplier)) / 1000
             let text = String(line[textRange]).trimmingCharacters(in: .whitespaces)
             
-            lines.append(LyricLine(timestamp: timestamp, text: text))
+            // Detect instrumental/interlude markers (often denoted by ♪)
+            let isInstrumental = text == "♪" || text.hasPrefix("♪ ")
+            
+            lines.append(LyricLine(timestamp: timestamp, text: text, isInstrumental: isInstrumental))
         }
         
         return Lyrics(lines: lines)

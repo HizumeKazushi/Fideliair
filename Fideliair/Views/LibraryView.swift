@@ -33,63 +33,80 @@ struct LibraryView: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack {
-                // View mode picker
-                Picker("View", selection: $viewMode) {
-                    ForEach(LibraryViewMode.allCases, id: \.self) { mode in
-                        Text(mode.rawValue).tag(mode)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .frame(width: 300)
-                
-                Spacer()
-                
-                // Search
-                HStack(spacing: 8) {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundStyle(.secondary)
-                    NativeSearchField(text: $searchText, placeholder: "Search")
-                        .frame(width: 180, height: 22)
-                    
-                    if !searchText.isEmpty {
-                        Button(action: { searchText = "" }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundStyle(.secondary)
+        ZStack {
+            VStack(spacing: 0) {
+                // Header
+                HStack {
+                    // View mode picker
+                    Picker("View", selection: $viewMode) {
+                        ForEach(LibraryViewMode.allCases, id: \.self) { mode in
+                            Text(mode.localized).tag(mode)
                         }
-                        .buttonStyle(.plain)
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(width: 300)
+                    
+                    Spacer()
+                    
+                    // Search
+                    HStack(spacing: 8) {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundStyle(.secondary)
+                        NativeSearchField(text: $searchText, placeholder: "Search".localized)
+                            .frame(width: 180, height: 22)
+                        
+                        if !searchText.isEmpty {
+                            Button(action: { searchText = "" }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundStyle(.secondary)
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
                 }
-            }
-            .padding()
-            .background(GlassBackground(opacity: 0.3))
-            
-            // Content
-            ScrollView {
-                switch viewMode {
-                case .albums:
-                    AlbumsGridView(albums: filteredAlbums, selectedAlbum: $selectedAlbum)
-                case .artists:
-                    ArtistsGridView(artists: filteredArtists, selectedArtist: $selectedArtist)
-                case .songs:
-                    TracksListView(tracks: filteredTracks)
+                .padding()
+                .background(GlassBackground(opacity: 0.3))
+                
+                // Content
+                ScrollView {
+                    switch viewMode {
+                    case .albums:
+                        AlbumsGridView(albums: filteredAlbums, selectedAlbum: $selectedAlbum)
+                    case .artists:
+                        ArtistsGridView(artists: filteredArtists, selectedArtist: $selectedArtist)
+                    case .songs:
+                        TracksListView(tracks: filteredTracks)
+                    }
                 }
+                .padding()
+                .padding(.bottom, 100) // Space for NowPlayingBar
             }
-            .padding()
-        }
-        .sheet(item: $selectedAlbum) { album in
-            AlbumDetailView(album: album)
-                .environmentObject(audioPlayer)
-                .environmentObject(libraryManager)
-                .environmentObject(playlistManager)
-        }
-        .sheet(item: $selectedArtist) { artist in
-            ArtistDetailView(artist: artist, selectedAlbum: $selectedAlbum)
-                .environmentObject(audioPlayer)
-                .environmentObject(libraryManager)
-                .environmentObject(playlistManager)
+            .sheet(item: $selectedArtist) { artist in
+                ArtistDetailView(artist: artist, selectedAlbum: $selectedAlbum)
+                    .environmentObject(audioPlayer)
+                    .environmentObject(libraryManager)
+                    .environmentObject(playlistManager)
+            }
+            
+            // Album Detail Overlay
+            if let album = selectedAlbum {
+                ZStack {
+                    Color.black.opacity(0.4)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            selectedAlbum = nil
+                        }
+                    
+                    AlbumDetailView(album: album, onDismiss: { selectedAlbum = nil })
+                        .environmentObject(audioPlayer)
+                        .environmentObject(libraryManager)
+                        .environmentObject(playlistManager)
+                        .transition(.scale(scale: 0.95).combined(with: .opacity))
+                        .zIndex(1)
+                }
+                .transition(.opacity)
+                .zIndex(100)
+            }
         }
     }
 }
@@ -98,6 +115,10 @@ enum LibraryViewMode: String, CaseIterable {
     case albums = "Albums"
     case artists = "Artists"
     case songs = "Songs"
+    
+    var localized: String {
+        return self.rawValue.localized
+    }
 }
 
 /// Grid view of albums
@@ -173,11 +194,11 @@ struct AlbumCardView: View {
             // Info
             VStack(alignment: .leading, spacing: 2) {
                 Text(album.name)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.zen(size: 14, weight: .semibold))
                     .lineLimit(1)
                 
                 Text(album.artist)
-                    .font(.system(size: 12))
+                    .font(.zen(size: 12))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
@@ -232,7 +253,7 @@ struct ArtistCardView: View {
                         endPoint: .bottomTrailing
                     )
                     .overlay(
-                        Image(systemName: "person.fill")
+                        Image(systemName: "music.mic")
                             .font(.largeTitle)
                             .foregroundStyle(.white.opacity(0.7))
                     )
@@ -244,11 +265,11 @@ struct ArtistCardView: View {
             .scaleEffect(isHovered ? 1.05 : 1.0)
             
             Text(artist.name)
-                .font(.system(size: 14, weight: .medium))
+                .font(.zen(size: 14, weight: .medium))
                 .lineLimit(1)
             
             Text("\(artist.albumCount) albums")
-                .font(.caption)
+                .font(.zen(.caption))
                 .foregroundStyle(.secondary)
         }
         .onHover { hovering in
@@ -309,11 +330,11 @@ struct TrackRowView: View {
                         .frame(width: 24)
                 } else if isHovered {
                     Image(systemName: "play.fill")
-                        .font(.caption)
+                        .font(.zen(.caption))
                         .foregroundStyle(.primary)
                 } else {
                     Text("\(index)")
-                        .font(.system(size: 12, design: .monospaced))
+                        .font(.zen(size: 12).monospaced())
                         .foregroundStyle(.secondary)
                 }
             }
@@ -331,12 +352,12 @@ struct TrackRowView: View {
             // Track info
             VStack(alignment: .leading, spacing: 2) {
                 Text(track.title)
-                    .font(.system(size: 14, weight: isPlaying ? .semibold : .regular))
+                    .font(.zen(size: 14, weight: isPlaying ? .semibold : .regular))
                     .foregroundStyle(isPlaying ? .blue : .primary)
                     .lineLimit(1)
                 
                 Text(track.artist)
-                    .font(.system(size: 12))
+                    .font(.zen(size: 12))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
@@ -422,23 +443,32 @@ struct TrackRowView: View {
     }
 }
 
-/// Album detail view (sheet)
+/// Album detail view (overlay)
 struct AlbumDetailView: View {
     let album: Album
+    let onDismiss: () -> Void
     @EnvironmentObject var audioPlayer: AudioPlayerManager
-    @Environment(\.dismiss) var dismiss
     
     var body: some View {
         ZStack {
             // Background from album art
             AlbumArtBackground(artwork: album.artwork)
             
+            // Add a solid material layer for better legibility
+            Rectangle()
+                .fill(.thickMaterial)
+                .ignoresSafeArea()
+            
+            // Add a light tint to make it "whiter"
+            Color.white.opacity(0.2)
+                .ignoresSafeArea()
+            
             VStack(spacing: 0) {
                 // Header
                 HStack {
-                    Button(action: { dismiss() }) {
+                    Button(action: { onDismiss() }) {
                         Image(systemName: "xmark.circle.fill")
-                            .font(.title2)
+                            .font(.zen(.title2))
                             .foregroundStyle(.secondary)
                     }
                     .buttonStyle(.plain)
@@ -448,7 +478,7 @@ struct AlbumDetailView: View {
                 .padding()
                 
                 // Album info
-                HStack(spacing: 24) {
+                HStack(alignment: .center, spacing: 24) {
                     // Large artwork
                     if let artwork = album.artwork {
                         Image(nsImage: artwork)
@@ -461,37 +491,57 @@ struct AlbumDetailView: View {
                     
                     VStack(alignment: .leading, spacing: 8) {
                         Text(album.name)
-                            .font(.largeTitle.bold())
+                            .font(.zen(.largeTitle).bold())
                         
                         Text(album.artist)
-                            .font(.title2)
+                            .font(.zen(.title2))
                             .foregroundStyle(.secondary)
                         
                         Text("\(album.trackCount) songs • \(formatDuration(album.duration))")
-                            .font(.subheadline)
+                            .font(.zen(.subheadline))
                             .foregroundStyle(.secondary)
                         
-                        Spacer()
-                        
-                        Button(action: {
-                            audioPlayer.playQueue(album.tracks)
-                        }) {
-                            HStack {
-                                Image(systemName: "play.fill")
-                                Text("Play")
-                            }
-                            .padding(.horizontal, 24)
-                            .padding(.vertical, 12)
-                            .background(
-                                LinearGradient(
-                                    colors: [.blue, .purple],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
+                        // Buttons row
+                        HStack(spacing: 12) {
+                            Button(action: {
+                                audioPlayer.playQueue(album.tracks)
+                                NotificationCenter.default.post(name: .showNowPlaying, object: nil)
+                                onDismiss()
+                            }) {
+                                HStack {
+                                    Image(systemName: "play.fill")
+                                    Text("Play")
+                                }
+                                .padding(.horizontal, 24)
+                                .padding(.vertical, 12)
+                                .background(
+                                    LinearGradient(
+                                        colors: [.blue, .purple],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
                                 )
-                            )
-                            .clipShape(Capsule())
+                                .clipShape(Capsule())
+                            }
+                            .buttonStyle(.plain)
+                            
+                            Button(action: {
+                                audioPlayer.shufflePlayQueue(album.tracks)
+                                NotificationCenter.default.post(name: .showNowPlaying, object: nil)
+                                onDismiss()
+                            }) {
+                                HStack {
+                                    Image(systemName: "shuffle")
+                                    Text("Shuffle")
+                                }
+                                .padding(.horizontal, 24)
+                                .padding(.vertical, 12)
+                                .background(Color.secondary.opacity(0.2))
+                                .clipShape(Capsule())
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
+                        .padding(.top, 16)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -502,8 +552,11 @@ struct AlbumDetailView: View {
                     LazyVStack(spacing: 0) {
                         ForEach(Array(album.tracks.enumerated()), id: \.element.id) { index, track in
                             TrackRowView(track: track, index: index + 1)
-                                .onTapGesture(count: 2) {
+                                .contentShape(Rectangle())
+                                .onTapGesture {
                                     audioPlayer.playQueue(album.tracks, startingAt: index)
+                                    NotificationCenter.default.post(name: .showNowPlaying, object: nil)
+                                    onDismiss()
                                 }
                             
                             if index < album.tracks.count - 1 {
@@ -512,13 +565,23 @@ struct AlbumDetailView: View {
                             }
                         }
                     }
-                    .background(GlassBackground(opacity: 0.3, cornerRadius: 12))
+                    .background(
+                        ZStack {
+                            Rectangle().fill(.ultraThickMaterial)
+                            Rectangle().fill(Color.white.opacity(0.7))
+                        }
+                    )
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .padding(.horizontal, 32)
+                    .padding(.bottom, 100) // Space for NowPlayingBar
                 }
+                
                 
                 Spacer()
             }
+            // Consume taps on the content to prevent dismissal
+            .contentShape(Rectangle())
+            .onTapGesture { }
         }
         .frame(minWidth: 700, minHeight: 600)
     }
@@ -584,8 +647,8 @@ struct ArtistDetailView: View {
                                 endPoint: .bottomTrailing
                             )
                             .overlay(
-                                Image(systemName: "person.fill")
-                                    .font(.system(size: 50))
+                                Image(systemName: "music.note")
+                                .font(.zen(size: 50))
                                     .foregroundStyle(.white.opacity(0.7))
                             )
                         }
@@ -596,7 +659,7 @@ struct ArtistDetailView: View {
                     
                     VStack(alignment: .leading, spacing: 8) {
                         Text(artist.name)
-                            .font(.largeTitle.bold())
+                    .font(.zen(.largeTitle).bold())
                         
                         Text("\(artist.albumCount) albums • \(artist.trackCount) songs")
                             .font(.subheadline)
@@ -651,8 +714,8 @@ struct ArtistDetailView: View {
                 .padding(.bottom, 24)
                 
                 // Albums section
-                Text("Albums")
-                    .font(.title2.bold())
+                Text("Library")
+                    .font(.zen(.largeTitle).bold())
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 32)
                     .padding(.bottom, 12)

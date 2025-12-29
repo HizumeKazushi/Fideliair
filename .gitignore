@@ -7,3 +7,11 @@
 .swiftpm
 /Fideliair.app
 Fideliair.app.dSYM
+
+# Release Artifacts
+Release/
+Fideliair.pkg
+AppIcon.icns
+*.iconset/
+fix_icon.sh
+
